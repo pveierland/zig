@@ -10,6 +10,27 @@ const expectEqual = testing.expectEqual;
 const expectApproxEqAbs = testing.expectApproxEqAbs;
 const expectApproxEqRel = testing.expectApproxEqRel;
 
+test "acosh.special" {
+    try expect(math.isNan(c.acosh(math.nan(f64))));
+    try expect(math.isNan(c.acosh(0.5)));
+
+    // -0x1.8p15 is the input from musl commit 3e80328d.
+    for ([_]f64{ 0, -0.0, -1, -0x1.8p15, -0x1p26, -math.inf(f64) }) |x| {
+        try expect(math.isNan(c.acosh(x)));
+    }
+
+    try expect(math.isPositiveZero(c.acosh(1)));
+    try expect(math.isPositiveInf(c.acosh(math.inf(f64))));
+}
+
+test "acosh.normal" {
+    // Formula boundaries in musl, with expected values from MPFR 4.2.2
+    // (mpfr_acosh, 53 bits, MPFR_RNDN).
+    const tolerance = 2 * math.floatEps(f64);
+    try expectApproxEqRel(0x1.5124271980435p0, c.acosh(2), tolerance);
+    try expectApproxEqRel(0x1.2b708872320e2p4, c.acosh(0x1p26), tolerance);
+}
+
 fn testModf(comptime T: type) !void {
     const f = switch (T) {
         f32 => c.modff,

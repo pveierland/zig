@@ -11509,6 +11509,7 @@ pub extern "c" fn bsearch(
 ) ?*anyopaque;
 
 // Math
+pub extern "c" fn acosh(x: f64) f64;
 pub extern "c" fn atan(x: f64) f64;
 pub extern "c" fn copysign(x: f64, y: f64) f64;
 pub extern "c" fn fdim(x: f64, y: f64) f64;
