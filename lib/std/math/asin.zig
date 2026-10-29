@@ -454,7 +454,7 @@ test "asinBinary128" {
 
 fn asinBinary32Vec(comptime vec_len: comptime_int, x: @Vector(vec_len, f32)) @TypeOf(x) {
     const pi_over_2: @Vector(vec_len, f32) = @splat(math.pi / 2.0);
-    const zero: @Vector(vec_len, f32) = @splat(0.0);
+    const zero: @Vector(vec_len, i32) = @splat(0);
     const half: @Vector(vec_len, f32) = @splat(0.5);
     const neg_two: @Vector(vec_len, f32) = @splat(-2.0);
     const c0: @Vector(vec_len, f32) = @splat(0x1.55555ep-3);
@@ -474,12 +474,12 @@ fn asinBinary32Vec(comptime vec_len: comptime_int, x: @Vector(vec_len, f32)) @Ty
     const p0_4 = @mulAdd(@Vector(vec_len, f32), z2, p1_4, c0);
     const p = @mulAdd(@Vector(vec_len, f32), z3, p0_4, z);
     const y = @select(f32, ax_lt_half, p, @mulAdd(@Vector(vec_len, f32), p, neg_two, pi_over_2));
-    return @select(f32, x < zero, -y, y);
+    return @select(f32, @as(@Vector(vec_len, i32), @bitCast(x)) < zero, -y, y);
 }
 
 fn asinBinary64Vec(comptime vec_len: comptime_int, x: @Vector(vec_len, f64)) @TypeOf(x) {
     const pi_over_2: @Vector(vec_len, f64) = @splat(math.pi / 2.0);
-    const zero: @Vector(vec_len, f64) = @splat(0.0);
+    const zero: @Vector(vec_len, i64) = @splat(0);
     const half: @Vector(vec_len, f64) = @splat(0.5);
     const neg_two: @Vector(vec_len, f64) = @splat(-2.0);
     const c0: @Vector(vec_len, f64) = @splat(0x1.555555555554ep-3);
@@ -515,7 +515,7 @@ fn asinBinary64Vec(comptime vec_len: comptime_int, x: @Vector(vec_len, f64)) @Ty
     const p0_11 = @mulAdd(@Vector(vec_len, f64), z8, p4_11, p0_3);
     const p = @mulAdd(@Vector(vec_len, f64), z3, p0_11, z);
     const y = @select(f64, ax_lt_half, p, @mulAdd(@Vector(vec_len, f64), p, neg_two, pi_over_2));
-    return @select(f64, x < zero, -y, y);
+    return @select(f64, @as(@Vector(vec_len, i64), @bitCast(x)) < zero, -y, y);
 }
 
 test "asinBinary32Vec.special" {
@@ -533,8 +533,8 @@ test "asinBinary32Vec.special" {
     const output = asinBinary32Vec(9, input);
     try testing.expectApproxEqAbs(0x1.921fb6p+0, output[0], math.floatEpsAt(f32, 0x1.921fb6p+0));
     try testing.expectApproxEqAbs(-0x1.921fb6p+0, output[1], math.floatEpsAt(f32, -0x1.921fb6p+0));
-    try testing.expectEqual(0x0p+0, output[2]);
-    try testing.expectEqual(0x0p+0, output[3]);
+    try testing.expect(math.isPositiveZero(output[2]));
+    try testing.expect(math.isNegativeZero(output[3]));
     try testing.expect(math.isNan(output[4]));
     try testing.expect(math.isNan(output[5]));
     try testing.expect(math.isNan(output[6]));
@@ -583,8 +583,8 @@ test "asinBinary64Vec.special" {
     const output = asinBinary64Vec(9, input);
     try testing.expectApproxEqAbs(0x1.921fb54442d18p+0, output[0], math.floatEpsAt(f64, 0x1.921fb54442d18p+0));
     try testing.expectApproxEqAbs(-0x1.921fb54442d18p+0, output[1], math.floatEpsAt(f64, -0x1.921fb54442d18p+0));
-    try testing.expectEqual(0x0p+0, output[2]);
-    try testing.expectEqual(0x0p+0, output[3]);
+    try testing.expect(math.isPositiveZero(output[2]));
+    try testing.expect(math.isNegativeZero(output[3]));
     try testing.expect(math.isNan(output[4]));
     try testing.expect(math.isNan(output[5]));
     try testing.expect(math.isNan(output[6]));
