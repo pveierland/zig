@@ -47,17 +47,21 @@ fn acosh32(x: f32) f32 {
 
 fn acosh64(x: f64) f64 {
     const u = @as(u64, @bitCast(x));
-    const e = (u >> 52) & 0x7FF;
+    const e = u >> 52;
 
-    // |x| < 2, invalid if x < 1 or nan
+    // 0 <= x < 2, invalid if x < 1
     if (e < 0x3FF + 1) {
         return math.log1p(x - 1 + @sqrt((x - 1) * (x - 1) + 2 * (x - 1)));
     }
-    // |x| < 0x1p26
+    // 2 <= x < 0x1p26
     else if (e < 0x3FF + 26) {
         return @log(2 * x - 1 / (x + @sqrt(x * x - 1)));
     }
-    // |x| >= 0x1p26 or nan
+    // x < 0 or x = -0, invalid
+    else if (e & 0x800 != 0) {
+        return math.nan(f64);
+    }
+    // x >= 0x1p26 or nan
     else {
         return @log(x) + 0.693147180559945309417232121458176568;
     }
@@ -90,6 +94,12 @@ test acosh64 {
     try expect(math.approxEqAbs(f64, acosh64(37.45), 4.315976, epsilon));
     try expect(math.approxEqAbs(f64, acosh64(89.123), 5.183133, epsilon));
     try expect(math.approxEqAbs(f64, acosh64(123123.234375), 12.414088, epsilon));
+
+    // Formula boundaries, with expected values from MPFR 4.2.2
+    // (mpfr_acosh, 53 bits, MPFR_RNDN).
+    const tolerance = 2 * math.floatEps(f64);
+    try expectApproxEqRel(0x1.5124271980435p0, acosh64(2), tolerance);
+    try expectApproxEqRel(0x1.2b708872320e2p4, acosh64(0x1p26), tolerance);
 }
 
 test "acosh32.special" {
@@ -107,4 +117,12 @@ test "acosh32.special" {
 test "acosh64.special" {
     try expect(math.isNan(acosh64(math.nan(f64))));
     try expect(math.isNan(acosh64(0.5)));
+
+    // -0x1.8p15 is the input from musl commit 3e80328d.
+    for ([_]f64{ 0, -0.0, -1, -0x1.8p15, -0x1p26, -math.inf(f64) }) |x| {
+        try expect(math.isNan(acosh64(x)));
+    }
+
+    try expect(math.isPositiveZero(acosh64(1)));
+    try expect(math.isPositiveInf(acosh64(math.inf(f64))));
 }
