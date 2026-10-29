@@ -127,7 +127,8 @@ pub fn log10_f64(x_: f64) f64 {
         // subnormal, scale x
         k -= 54;
         x *= 0x1.0p54;
-        hx = @intCast(@as(u64, @bitCast(x)) >> 32);
+        ix = @bitCast(x);
+        hx = @intCast(ix >> 32);
     } else if (hx >= 0x7FF00000) {
         return x;
     } else if (hx == 0x3FF00000 and ix << 32 == 0) {
@@ -446,8 +447,16 @@ test "log10() boundary" {
     try expect(math.isNan(log10_f64(-0x1p-1074))); // Min negative input value
     try expectEqual(log10_f64(0x1.0000000000001p+0), 0x1.bcb7b1526e50dp-54); // Last value before result reaches +0
     try expectEqual(log10_f64(0x1.fffffffffffffp-1), -0x1.bcb7b1526e50fp-55); // Last value before result reaches -0
-    try expectEqual(log10_f64(0x1p-1022), -0x1.33a7146f72a42p+8); // First subnormal
-    try expect(math.isNan(log10_f64(-0x1p-1022))); // First negative subnormal
+    try expectEqual(log10_f64(0x1p-1022), -0x1.33a7146f72a42p+8); // Min positive normal
+    try expect(math.isNan(log10_f64(-0x1p-1022))); // Min negative normal
+}
+
+test "log10() subnormal" {
+    // Scaling these subnormals by 2^54 changes their low 32 bits.
+    // Expected values from MPFR 4.2.2 (mpfr_log10, 53 bits, MPFR_RNDN).
+    try expectEqual(-0x1.39ac5a78a4e97p+8, log10_f64(0x0.00000ffffffffp-1022));
+    try expectEqual(-0x1.3440f8b578be5p+8, log10_f64(0x0.4022c3feddf0ep-1022));
+    try expectEqual(-0x1.395ee3ce5e605p+8, log10_f64(0x0.0000201d83fd2p-1022));
 }
 
 test "log10q() special" {
